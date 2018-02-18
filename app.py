@@ -31,7 +31,22 @@ DATABASE_STATE_CHANGED = False
 
 
 def is_database_available(database):
-    """Helper to check the availability status of the database"""
+    """
+    Helper to check the availability status of the database.
+
+    Attempts to get the collection names in the database and handles
+    the exception as a case when the database is unavailable.
+
+    On unavailable database state, triggers the notifier to send out
+    a notification to registered subscribers.
+
+    If database is available and has a previous database state change
+    global boolean, sets it to false for allowing further triggers.
+
+    :param database: Database to check connectivity status
+    :type  database: pymongo.database.Database
+    :rtype         : bool
+    """
     global DATABASE_STATE_CHANGED, LAST_NOTIFIED
     try:
         database.collection_names()
@@ -47,12 +62,26 @@ def is_database_available(database):
 
 
 def notify_db_return():
-    """Helper to notify the consumers of the database returning"""
+    """
+    Helper to notify the consumers of the database returning to an
+    available state.
+
+    TODO: Plug in a proper notification backend
+    """
     print("Database back up...")
 
 
 def notify_error(db_error):
-    """Helper to notify the targets on database failure"""
+    """
+    Helper to notify the targets on database failure. Triggered when
+    the database connectivity is lost, from the periodic callback
+    handler.
+
+    :param db_error: Database error encountered
+    :type  db_error: Exception
+
+    TODO: Plug in a proper notification backend
+    """
     current_time_stamp = datetime.utcnow()
     global LAST_NOTIFIED
     if LAST_NOTIFIED is not None:
