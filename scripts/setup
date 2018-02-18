@@ -1,0 +1,122 @@
+#! /bin/bash
+
+# Base paths for the repository/runners
+SCRIPT=$(readlink -f $BASH_SOURCE)
+SCRIPT_DIR=$(dirname $SCRIPT)
+REPO_DIR=$(dirname $SCRIPT_DIR)
+RUNNER="$REPO_DIR/app.py"
+
+SYS_REQUIREMENTS="$REPO_DIR/sys-requirements.txt"
+PY_REQUIREMENTS="$REPO_DIR/py-requirements.txt"
+
+# Setup virtual environment paths
+VENV_ROOT="$HOME/virtualenvironments"
+VENV_PATH="$VENV_ROOT/db-monitor-environment"
+VENV_BIN="$VENV_PATH/bin"
+
+# Check for PyPI requirements file for setting up required packages
+# via a pip install.
+if [ ! -s "$PY_REQUIREMENTS" ]; then
+    echo "Python requirements file not found/empty. Cannot proceed"
+    exit 1
+fi
+
+# Check for a system requirements file to setup required system packages
+# This assumes an Ubuntu/Debian based system.
+# TODO: Find a way to abstract installation to work with other OSs.
+if [ ! -s "$SYS_REQUIREMENTS" ]; then
+    echo "System requirements file not found/empty. Cannot proceed"
+    exit 1
+fi
+
+# Check for Python version from the environment and fallback to Python3
+if [[ "$PY_VERSION" == "" ]]; then
+    PY_VERSION="3"
+fi
+
+# Generate a suffix for pip/python binaries inside the virtual environment
+# For safety reasons, explicitly set suffixes to version to Py version
+# in case of Python3+ and an empty string for legacy 2.x binaries.
+if [[ "$PY_VERSION" == "2"* ]]; then
+    suffix=""
+    SYS_SUFFIX=""
+else
+    suffix="$PY_VERSION"
+    IFS='.' read -ra verArr <<< "$PY_VERSION"
+    SYS_SUFFIX="${verArr[0]}"  # TODO: Get only the major version
+fi
+
+# Set the pip/python binary paths within the virtual environment for
+# use with the main runner script.
+VENV_PIP="$VENV_BIN/pip$suffix"
+VENV_PY="$VENV_BIN/python$suffix"
+
+# Check for the requested Python version and exit if it is not found.
+# TODO: Add helper to install it from the system's package manager/source.
+PY_VERSION="python$PY_VERSION"
+SYS_PYTHON=$(which $PY_VERSION)
+if [[ "$SYS_PYTHON" == "" ]]; then
+    msg="$PY_VERSION not found. Please install to proceed"
+    echo -e $msg
+    exit 1
+fi
+
+installSystemPackages() {
+    packages=""
+    while IFS='' read -r line || [[ -n "$line" ]]; do
+        if [[ 
+            "$line" != "#"* ]] && [[ "$line" != "" ]]; then
+            # To process Python* packages, a py-<package> convention
+            # is used in the requirements. 
+            if [[ "$line" == "py-"* ]]; then
+                IFS='-' read -ra lineArr <<< "$line"
+                line="python$SYS_SUFFIX-${lineArr[1]}"
+            fi
+            packages="$packages $line"
+        fi
+    done < "$SYS_REQUIREMENTS"
+    if [[ $packages == "" ]]; then
+        echo "No packages provided. Cannot proceed"
+        exit 1
+    fi
+    echo "Installing $packages"
+    res=$(sudo apt-get install -y $packages 2>&1)
+    if [[ "$res" == *"E:"* ]]; then
+        echo -e "Error installing packages. $res"
+        exit 1
+    fi
+    echo "Installed system packages"
+}
+
+installVirtualEnvironment() {
+    echo "Setting up virtual environment at $VENV_PATH"
+    virtualenv -p $SYS_PYTHON $VENV_PATH
+}
+
+installPythonPackages() {
+    echo "Setting up Python packages from PyPI"
+    res=$($VENV_PIP install -r $PY_REQUIREMENTS 2>&1)
+    echo "$res"
+}
+
+
+setupRepo() {
+    installSystemPackages
+    installVirtualEnvironment
+    installPythonPackages
+}
+
+
+# Ensure the setup functions run only when this script is run standalone
+# and not when it is sourced.
+if [[ "$0" == *"scripts/setup" ]]; then
+    echo "Beginning setup"
+    setupRepo
+else
+    if [ ! -f $VENV_PY ]; then
+        msg="$VENV_PY not found. Did you install"
+        msg="$msg the repo with a different Python version?"
+        echo -e "$msg"
+        exit 1
+    fi
+fi

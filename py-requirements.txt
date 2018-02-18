@@ -1,0 +1,4 @@
+tornado
+# Pymongo is set to 2.8 for the legacy database we use. Update this
+# according to your requirements/database setup
+pymongo==2.8

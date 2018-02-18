@@ -1,0 +1,15 @@
+
+# Base system packages for setting up downstream package dependencies
+build-essential
+g++
+# For Python specific packages, use the py-<package_suffix> format. The
+# setup script has a flow to extract the specific python version from
+# the environment and update the package here version.
+# For example, PY_VERSION=3.6 ./setup would generate python3-dev and
+# PY_VERSION=2.7 ./setup would generate python-dev during setup
+py-dev
+py-pip
+# We use Mongo as our datastore hence the base repo uses it. Please
+# update this package to suit your dev/staging/production environments.
+mongodb-server
+virtualenv

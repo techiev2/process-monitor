@@ -1,0 +1,9 @@
+#! /bin/bash
+
+SCRIPT=$(readlink -f $BASH_SOURCE)
+SCRIPT_DIR=$(dirname $SCRIPT)
+SETUP_SCRIPT="$SCRIPT_DIR/setup"
+
+source "$SETUP_SCRIPT"
+
+$VENV_PY $RUNNER
