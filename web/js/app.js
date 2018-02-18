@@ -19,9 +19,17 @@ function getStatusAndUpdate() {
 }
 
 
-if (window.WebSocket || window.useSocket === true) {
+if (!window.WebSocket) {
     // Use long polling to fetch status via an XHR call every 30 seconds
+    console.info("Fetching via XHR");
+    getStatusAndUpdate();
     setInterval(getStatusAndUpdate, 5000);
 } else {
-    console.log("TODO: Plug in WebSocket based flow to get status");
+    var ws = new WebSocket("ws://localhost:9999/socket-status");
+    ws.onopen = function() {
+       ws.send("status");
+    };
+    ws.onmessage = function (evt) {
+        container.innerHTML = evt.data;
+    };
 }
