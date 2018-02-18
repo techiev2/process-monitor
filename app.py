@@ -13,10 +13,11 @@ __author__ = "Sriram Velamur<sriram.velamur@gmail.com>"
 
 import sys
 sys.dont_write_bytecode = True
-from os import getenv
+from os import getenv, path, pardir
 from datetime import datetime, timedelta
 
-from tornado.web import Application
+from tornado.web import Application, RequestHandler, StaticFileHandler
+from tornado.websocket import WebSocketHandler, WebSocketClosedError
 from tornado.ioloop import IOLoop, PeriodicCallback
 from pymongo.mongo_client import MongoClient
 
@@ -28,6 +29,14 @@ except BaseException:
 
 LAST_NOTIFIED = None
 DATABASE_STATE_CHANGED = False
+DATABASE_AVAILABLE = True
+
+ROOT = path.abspath(path.join(path.abspath(__file__), pardir))
+WEB_ROOT = path.join(ROOT, "web")
+JS_ROOT = path.join(WEB_ROOT, "js")
+STYLES_ROOT = path.join(WEB_ROOT, "css")
+
+CHANNELS = {}
 
 
 def run_periodic():
@@ -44,15 +53,17 @@ def run_periodic():
     If database is available and has a previous database state change
     global boolean, sets it to false for allowing further triggers.
     """
-    global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE
+    global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE, DATABASE_AVAILABLE
     try:
         DATABASE.collection_names()
+        DATABASE_AVAILABLE = True
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
             notify_db_return()
     except BaseException as db_error:
         DATABASE_STATE_CHANGED = True
+        DATABASE_AVAILABLE = False
         notify_error(db_error)
 
 
@@ -63,7 +74,15 @@ def notify_db_return():
 
     TODO: Plug in a proper notification backend
     """
-    print("Database back up...")
+    global CHANNELS
+    message = "Database back up.."
+    status_subscribers = CHANNELS.get("status")
+    for subscriber in status_subscribers:
+        try:
+            subscriber.write_message(get_status_message())
+        except WebSocketClosedError:
+            pass
+    print(message)
 
 
 def notify_error(db_error):
@@ -90,6 +109,15 @@ def notify_error(db_error):
     if valid:
         LAST_NOTIFIED = current_time_stamp
         print(failure_msg.format(db_error))
+
+        global CHANNELS
+        message = "Database back up.."
+        status_subscribers = CHANNELS.get("status", [])
+        for subscriber in status_subscribers:
+            try:
+                subscriber.write_message(get_status_message())
+            except WebSocketClosedError:
+                pass
 
 
 class MonitorApplication(Application):
@@ -120,9 +148,74 @@ class MonitorApplication(Application):
             print("Exiting monitoring app")
 
 
+def get_status_message():
+    """Helper to get a status message based on database connectivity"""
+    if not DATABASE_AVAILABLE:
+        return "Database down. Last reported at <b>{}</b>".format(
+            LAST_NOTIFIED
+        )
+
+    return "<b>All systems up and running</b>"
+
+
+class StatusSocketController(WebSocketHandler):
+
+    def open(self):
+        print("WebSocket opened")
+
+    def on_message(self, message):
+        if message != "status":
+            return self.write_message("Invalid channel")
+        global CHANNELS
+        channels = CHANNELS
+        status_subscribers = channels.get("status", [])
+        status_subscribers.append(self)
+        channels["status"] = status_subscribers
+        self.write_message(get_status_message())
+
+    def on_close(self):
+        print("WebSocket closed")
+
+
+class RootViewController(RequestHandler):
+    """Controller to render the root view for the monitor app"""
+
+    data_chunks = []
+
+    def data_received(self, chunk):
+        """Overridden method from abstract RequestHandler class"""
+        self.data_chunks.append(chunk)
+        super(RootViewController, self).data_received(chunk)
+
+    def get(self, *args, **kwargs):
+        """
+        HTTP GET request handler method. Renders a template based on
+        the database availability status.
+        """
+        template = path.join(WEB_ROOT, "index.html")
+        return self.render(template)
+
+
+class StatusViewController(RequestHandler):
+    """Controller for getting the status of the database"""
+
+    def get(self, *args, **kwargs):
+        """
+        HTTP GET request handler method. Renders a template based on
+        the database availability status.
+        """
+        return self.write(get_status_message())
+
+
 def run_api():
     """Main runner for monitor API"""
-    MonitorApplication().run()
+    MonitorApplication([
+        ("^/?$", RootViewController),
+        ("^/status/?$", StatusViewController),
+        ("^/socket-status/?$", StatusSocketController),
+        (r".*/js/(.*)$", StaticFileHandler, {"path": JS_ROOT}),
+        (r".*/css/(.*)$", StaticFileHandler, {"path": STYLES_ROOT}),
+    ]).run()
 
 
 if __name__ == '__main__':
