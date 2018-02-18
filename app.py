@@ -13,10 +13,10 @@ __author__ = "Sriram Velamur<sriram.velamur@gmail.com>"
 
 import sys
 sys.dont_write_bytecode = True
-from os import getenv
+from os import getenv, path, pardir
 from datetime import datetime, timedelta
 
-from tornado.web import Application, RequestHandler
+from tornado.web import Application, RequestHandler, StaticFileHandler
 from tornado.ioloop import IOLoop, PeriodicCallback
 from pymongo.mongo_client import MongoClient
 
@@ -29,6 +29,12 @@ except BaseException:
 LAST_NOTIFIED = None
 DATABASE_STATE_CHANGED = False
 DATABASE_AVAILABLE = True
+
+ROOT = path.abspath(path.join(path.abspath(__file__), pardir))
+WEB_ROOT = path.join(ROOT, "web")
+JS_ROOT = path.join(WEB_ROOT, "js")
+STYLES_ROOT = path.join(WEB_ROOT, "css")
+# TEMPLATES = path.join(web, "index.html")
 
 
 def run_periodic():
@@ -123,6 +129,20 @@ class MonitorApplication(Application):
             print("Exiting monitoring app")
 
 
+def get_status_message():
+    """Helper to get a status message based on database connectivity"""
+    if not DATABASE_AVAILABLE:
+        return "Database down. Last reported at <b>{}</b>".format(
+            LAST_NOTIFIED
+        )
+
+    return "<b>All systems up and running</b>"
+
+
+# class StatusSocketController(SocketHandler):
+#     pass
+
+
 class RootViewController(RequestHandler):
     """Controller to render the root view for the monitor app"""
 
@@ -138,19 +158,28 @@ class RootViewController(RequestHandler):
         HTTP GET request handler method. Renders a template based on
         the database availability status.
         """
-        if not DATABASE_AVAILABLE:
-            return self.write(
-                "Database down. Last reported at <b>{}</b>".format(
-                    LAST_NOTIFIED
-                )
-            )
-        return self.write("<b>All systems up and running</b>")
+        template = path.join(WEB_ROOT, "index.html")
+        return self.render(template)
+
+
+class StatusViewController(RequestHandler):
+    """Controller for getting the status of the database"""
+
+    def get(self, *args, **kwargs):
+        """
+        HTTP GET request handler method. Renders a template based on
+        the database availability status.
+        """
+        return self.write(get_status_message())
 
 
 def run_api():
     """Main runner for monitor API"""
     MonitorApplication([
-        ("^/?$", RootViewController)
+        ("^/?$", RootViewController),
+        ("^/status/?$", StatusViewController),
+        (r".*/js/(.*)$", StaticFileHandler, {"path": JS_ROOT}),
+        (r".*/css/(.*)$", StaticFileHandler, {"path": STYLES_ROOT}),
     ]).run()
 
 
