@@ -17,6 +17,7 @@ from os import getenv, path, pardir
 from datetime import datetime, timedelta
 
 from tornado.web import Application, RequestHandler, StaticFileHandler
+from tornado.websocket import WebSocketHandler, WebSocketClosedError
 from tornado.ioloop import IOLoop, PeriodicCallback
 from pymongo.mongo_client import MongoClient
 
@@ -34,7 +35,8 @@ ROOT = path.abspath(path.join(path.abspath(__file__), pardir))
 WEB_ROOT = path.join(ROOT, "web")
 JS_ROOT = path.join(WEB_ROOT, "js")
 STYLES_ROOT = path.join(WEB_ROOT, "css")
-# TEMPLATES = path.join(web, "index.html")
+
+CHANNELS = {}
 
 
 def run_periodic():
@@ -72,7 +74,15 @@ def notify_db_return():
 
     TODO: Plug in a proper notification backend
     """
-    print("Database back up...")
+    global CHANNELS
+    message = "Database back up.."
+    status_subscribers = CHANNELS.get("status")
+    for subscriber in status_subscribers:
+        try:
+            subscriber.write_message(get_status_message())
+        except WebSocketClosedError:
+            pass
+    print(message)
 
 
 def notify_error(db_error):
@@ -99,6 +109,15 @@ def notify_error(db_error):
     if valid:
         LAST_NOTIFIED = current_time_stamp
         print(failure_msg.format(db_error))
+
+        global CHANNELS
+        message = "Database back up.."
+        status_subscribers = CHANNELS.get("status", [])
+        for subscriber in status_subscribers:
+            try:
+                subscriber.write_message(get_status_message())
+            except WebSocketClosedError:
+                pass
 
 
 class MonitorApplication(Application):
@@ -139,8 +158,23 @@ def get_status_message():
     return "<b>All systems up and running</b>"
 
 
-# class StatusSocketController(SocketHandler):
-#     pass
+class StatusSocketController(WebSocketHandler):
+
+    def open(self):
+        print("WebSocket opened")
+
+    def on_message(self, message):
+        if message != "status":
+            return self.write_message("Invalid channel")
+        global CHANNELS
+        channels = CHANNELS
+        status_subscribers = channels.get("status", [])
+        status_subscribers.append(self)
+        channels["status"] = status_subscribers
+        self.write_message(get_status_message())
+
+    def on_close(self):
+        print("WebSocket closed")
 
 
 class RootViewController(RequestHandler):
@@ -178,6 +212,7 @@ def run_api():
     MonitorApplication([
         ("^/?$", RootViewController),
         ("^/status/?$", StatusViewController),
+        ("^/socket-status/?$", StatusSocketController),
         (r".*/js/(.*)$", StaticFileHandler, {"path": JS_ROOT}),
         (r".*/css/(.*)$", StaticFileHandler, {"path": STYLES_ROOT}),
     ]).run()
