@@ -51,11 +51,9 @@ def run_periodic():
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
             notify_db_return()
-        return True
     except BaseException as db_error:
         DATABASE_STATE_CHANGED = True
         notify_error(db_error)
-        return False
 
 
 def notify_db_return():
