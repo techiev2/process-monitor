@@ -30,9 +30,10 @@ LAST_NOTIFIED = None
 DATABASE_STATE_CHANGED = False
 
 
-def is_database_available(database):
+def run_periodic():
     """
-    Helper to check the availability status of the database.
+    Periodic runner method that is called by the IOLoop every specified
+    duration.
 
     Attempts to get the collection names in the database and handles
     the exception as a case when the database is unavailable.
@@ -105,9 +106,7 @@ class MonitorApplication(Application):
         kwargs.update({"debug": getenv("debug") == "True"})
         super(MonitorApplication, self).__init__(*args, **kwargs)
         self.database = DATABASE
-        PeriodicCallback(
-            lambda: is_database_available(DATABASE), 500
-        ).start()
+        PeriodicCallback(run_periodic, 500).start()
         self.loop = IOLoop.instance()
 
     def run(self, port=9999):
