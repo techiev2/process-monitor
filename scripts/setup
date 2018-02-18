@@ -43,7 +43,7 @@ if [[ "$PY_VERSION" == "2"* ]]; then
 else
     suffix="$PY_VERSION"
     IFS='.' read -ra verArr <<< "$PY_VERSION"
-    SYS_SUFFIX="${verArr[0]}"  # TODO: Get only the major version
+    SYS_SUFFIX="${verArr[0]}"
 fi
 
 # Set the pip/python binary paths within the virtual environment for
