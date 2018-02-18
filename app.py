@@ -16,7 +16,7 @@ sys.dont_write_bytecode = True
 from os import getenv
 from datetime import datetime, timedelta
 
-from tornado.web import Application
+from tornado.web import Application, RequestHandler
 from tornado.ioloop import IOLoop, PeriodicCallback
 from pymongo.mongo_client import MongoClient
 
@@ -28,6 +28,7 @@ except BaseException:
 
 LAST_NOTIFIED = None
 DATABASE_STATE_CHANGED = False
+DATABASE_AVAILABLE = True
 
 
 def run_periodic():
@@ -44,15 +45,17 @@ def run_periodic():
     If database is available and has a previous database state change
     global boolean, sets it to false for allowing further triggers.
     """
-    global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE
+    global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE, DATABASE_AVAILABLE
     try:
         DATABASE.collection_names()
+        DATABASE_AVAILABLE = True
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
             notify_db_return()
     except BaseException as db_error:
         DATABASE_STATE_CHANGED = True
+        DATABASE_AVAILABLE = False
         notify_error(db_error)
 
 
@@ -120,9 +123,35 @@ class MonitorApplication(Application):
             print("Exiting monitoring app")
 
 
+class RootViewController(RequestHandler):
+    """Controller to render the root view for the monitor app"""
+
+    data_chunks = []
+
+    def data_received(self, chunk):
+        """Overridden method from abstract RequestHandler class"""
+        self.data_chunks.append(chunk)
+        super(RootViewController, self).data_received(chunk)
+
+    def get(self, *args, **kwargs):
+        """
+        HTTP GET request handler method. Renders a template based on
+        the database availability status.
+        """
+        if not DATABASE_AVAILABLE:
+            return self.write(
+                "Database down. Last reported at <b>{}</b>".format(
+                    LAST_NOTIFIED
+                )
+            )
+        return self.write("<b>All systems up and running</b>")
+
+
 def run_api():
     """Main runner for monitor API"""
-    MonitorApplication().run()
+    MonitorApplication([
+        ("^/?$", RootViewController)
+    ]).run()
 
 
 if __name__ == '__main__':
