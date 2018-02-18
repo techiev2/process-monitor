@@ -43,14 +43,10 @@ def run_periodic():
 
     If database is available and has a previous database state change
     global boolean, sets it to false for allowing further triggers.
-
-    :param database: Database to check connectivity status
-    :type  database: pymongo.database.Database
-    :rtype         : bool
     """
-    global DATABASE_STATE_CHANGED, LAST_NOTIFIED
+    global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE
     try:
-        database.collection_names()
+        DATABASE.collection_names()
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
