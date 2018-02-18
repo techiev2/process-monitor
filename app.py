@@ -83,9 +83,10 @@ def notify_error(db_error):
     TODO: Plug in a proper notification backend
     """
     current_time_stamp = datetime.utcnow()
+    cutoff = LAST_NOTIFIED + timedelta(minutes=5)
     global LAST_NOTIFIED
     if LAST_NOTIFIED is not None:
-        valid = current_time_stamp >= LAST_NOTIFIED + timedelta(minutes=5)
+        valid = current_time_stamp >= cutoff
     else:
         valid = True
 
