@@ -16,7 +16,7 @@ sys.dont_write_bytecode = True
 from os import getenv
 from datetime import datetime, timedelta
 
-from tornado.web import RequestHandler, Application
+from tornado.web import Application
 from tornado.ioloop import IOLoop, PeriodicCallback
 from pymongo.mongo_client import MongoClient
 
@@ -72,7 +72,7 @@ class MonitorApplication(Application):
 
     def __init__(self, *args, **kwargs):
         """Database monitor application class init"""
-        kwargs.update({"debug": getenv("debug")  == "True"})
+        kwargs.update({"debug": getenv("debug") == "True"})
         super(MonitorApplication, self).__init__(*args, **kwargs)
         self.database = DATABASE
         PeriodicCallback(
