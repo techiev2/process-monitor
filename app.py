@@ -163,7 +163,7 @@ def get_status_message():
             else:
                 delta = "{} minutes ago".format(minutes)
 
-        error_html = "Database down. Last reported <span id='time'>{}</span>"
+        error_html = "Database down. Last reported {}"
         return error_html.format(delta)
 
     return "All systems up and running"
