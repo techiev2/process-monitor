@@ -151,11 +151,22 @@ class MonitorApplication(Application):
 def get_status_message():
     """Helper to get a status message based on database connectivity"""
     if not DATABASE_AVAILABLE:
-        return "Database down. Last reported at <b>{}</b>".format(
-            LAST_NOTIFIED
-        )
+        current_time_stamp = datetime.utcnow()
+        time_diff = (current_time_stamp - LAST_NOTIFIED).seconds
 
-    return "<b>All systems up and running</b>"
+        if time_diff < 60:
+            delta = "{} seconds ago".format(time_diff)
+        else:
+            minutes = time_diff // 60
+            if minutes > 59:
+                delta = "{} hours ago".format(minutes // 60)
+            else:
+                delta = "{} minutes ago".format(minutes)
+
+        error_html = "Database down. Last reported <span id='time'>{}</span>"
+        return error_html.format(delta)
+
+    return "All systems up and running"
 
 
 class StatusSocketController(WebSocketHandler):
