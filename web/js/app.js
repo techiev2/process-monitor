@@ -39,7 +39,7 @@ function fetchOverWebSocket() {
             app.container.classList.remove('error');
             app.container.classList.add('success');
         }
-        app.container.innerHTML = evt.data;
+        app.container.innerHTML = '<span>' + evt.data + '</span>';
     };
 }
 

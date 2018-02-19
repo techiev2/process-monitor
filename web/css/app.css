@@ -18,13 +18,19 @@ body {
 #app-container {
     position: relative;
     width: 80%;
-    height: 20%;
+    height: 150px;
+    line-height: 135px;
     top: 35%;
     left: 5%;
     padding: 5%;
-    line-height: 500%;
     border-radius: 5px;
     text-align: center;
+}
+
+#app-container span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
 }
 
 #app-container.success {
@@ -36,5 +42,4 @@ body {
     background: #F44336;
     color: #E0E0E0;
     font-size: 18px;
-    line-height: 300%;
 }
