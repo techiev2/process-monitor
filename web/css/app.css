@@ -24,6 +24,7 @@ body {
     padding: 5%;
     line-height: 500%;
     border-radius: 5px;
+    text-align: center;
 }
 
 #app-container.success {
