@@ -1,35 +1,49 @@
-var api = "http://localhost:9999";
-var statusURL = api + "/status/";
-var container = document.querySelector("#app-container");
-var xhr = new XMLHttpRequest();
+var app = {
+    urls: {
+        api: 'http://localhost:9999',
+        ws: 'ws://localhost:9999'
+    },
+    container: document.querySelector('#app-container'),
+    xhr: new XMLHttpRequest(),
+    ws: null
+};
 
+// Helper method to fetch the status over an XMLHttpRequest and update
+// the container with the status.
 function getStatusAndUpdate() {
-    console.info("Fetching status");
-    xhr.open("get", statusURL, true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState !== 4) return;
-        if (xhr.status === 200) {
-            container.innerHTML = xhr.responseText;
+    console.info('Fetching status');
+    var errorMsg = 'Error fetching status from monitor app';
+    app.xhr.open('get', app.urls.api + '/status/', true);
+    app.xhr.onreadystatechange = function () {
+        if (app.xhr.readyState !== 4) return;
+        if (app.xhr.status === 200) {
+            app.container.innerHTML = app.xhr.responseText;
             return;
         }
-        container.innerHTML = "Error fetching status from monitor app";
+        app.container.innerHTML = errorMsg;
         return;
     };
-    xhr.send();
+    app.xhr.send();
 }
 
+function fetchOverWebSocket() {
+    app.ws = new WebSocket(app.urls.ws + '/socket-status');
+    app.ws.onopen = function() {
+       app.ws.send('status');
+    };
+    app.ws.onmessage = function (evt) {
+        app.container.innerHTML = evt.data;
+    };
+}
 
+// If the browser environment does not support Websockets,
+// use long polling to fetch status via an XHR call every 5 seconds.
 if (!window.WebSocket) {
-    // Use long polling to fetch status via an XHR call every 30 seconds
-    console.info("Fetching via XHR");
+    console.info('Fetching via XHR');
     getStatusAndUpdate();
     setInterval(getStatusAndUpdate, 5000);
 } else {
-    var ws = new WebSocket("ws://localhost:9999/socket-status");
-    ws.onopen = function() {
-       ws.send("status");
-    };
-    ws.onmessage = function (evt) {
-        container.innerHTML = evt.data;
-    };
+    // If the browser supports WebSocket, use a WebSocket connection to
+    // listen to the status from the app
+    fetchOverWebSocket();
 }
