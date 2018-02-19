@@ -32,6 +32,13 @@ function fetchOverWebSocket() {
        app.ws.send('status');
     };
     app.ws.onmessage = function (evt) {
+        if (evt.data.indexOf('down') !== -1) {
+            app.container.classList.remove('success');
+            app.container.classList.add('error');
+        } else {
+            app.container.classList.remove('error');
+            app.container.classList.add('success');
+        }
         app.container.innerHTML = evt.data;
     };
 }
