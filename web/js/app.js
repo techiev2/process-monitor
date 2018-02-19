@@ -35,9 +35,11 @@ function fetchOverWebSocket() {
         if (evt.data.indexOf('down') !== -1) {
             app.container.classList.remove('success');
             app.container.classList.add('error');
+            document.body.classList.add('error');
         } else {
             app.container.classList.remove('error');
             app.container.classList.add('success');
+            document.body.classList.remove('error');
         }
         app.container.innerHTML = '<span>' + evt.data + '</span>';
     };
