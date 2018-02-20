@@ -11,9 +11,9 @@ html, body {
     font-size: 19px;
 }
 
-body { background: #CDDC39; }
-
-body.error { background: #455A64; }
+body {
+    background: #CDDC39;
+}
 
 #app-container {
     position: relative;
@@ -41,5 +41,7 @@ body.error { background: #455A64; }
 #app-container.error {
     background: #F44336;
     color: #E0E0E0;
+    font-size: 18px;
+}: #E0E0E0;
     font-size: 18px;
 }
