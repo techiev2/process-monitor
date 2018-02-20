@@ -44,8 +44,9 @@ def run_periodic():
     Periodic runner method that is called by the IOLoop every specified
     duration.
 
-    Attempts to get the collection names in the database and handles
-    the exception as a case when the database is unavailable.
+    The example flow attempts to get the collection names in the
+    database and handles the exception as a case when the database
+    is unavailable.
 
     On unavailable database state, triggers the notifier to send out
     a notification to registered subscribers.
@@ -60,17 +61,17 @@ def run_periodic():
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
-            notify_db_return()
-    except BaseException as db_error:
+            notify_monitor_success()
+    except BaseException as monitor_error:
         DATABASE_STATE_CHANGED = True
         DATABASE_AVAILABLE = False
-        notify_error(db_error)
+        notify_monitor_error(monitor_error)
 
 
-def notify_db_return():
+def notify_monitor_success():
     """
-    Helper to notify the consumers of the database returning to an
-    available state.
+    Helper to notify the consumers of the monitored process returning
+    to an available state.
 
     TODO: Plug in a proper notification backend
     """
@@ -85,14 +86,14 @@ def notify_db_return():
     print(message)
 
 
-def notify_error(db_error):
+def notify_monitor_error(monitor_error):
     """
-    Helper to notify the targets on database failure. Triggered when
-    the database connectivity is lost, from the periodic callback
-    handler.
+    Helper to notify the targets on failure in the monitored process.
+    The current example is triggered when the database connectivity is
+    lost, from the periodic callback handler.
 
-    :param db_error: Database error encountered
-    :type  db_error: Exception
+    :param monitor_error: Error encountered with the monitor
+    :type  monitor_error: Exception
 
     TODO: Plug in a proper notification backend
     """
@@ -104,14 +105,17 @@ def notify_error(db_error):
     else:
         valid = True
 
-    failure_msg = "Database connection failed. Attempting to notify {}"
+    failure_msg = "".join([
+        "ERROR: Failure with monitored process.",
+        " Attempting to notify {}"
+    ])
 
     if valid:
         LAST_NOTIFIED = current_time_stamp
-        print(failure_msg.format(db_error))
+        print(failure_msg.format(monitor_error))
 
         global CHANNELS
-        message = "Database back up.."
+        message = "Monitored process is back up."
         status_subscribers = CHANNELS.get("status", [])
         for subscriber in status_subscribers:
             try:
@@ -163,7 +167,7 @@ def get_status_message():
             else:
                 delta = "{} minutes ago".format(minutes)
 
-        error_html = "Database down. Last reported {}"
+        error_html = "ERROR: Last reported {}"
         return error_html.format(delta)
 
     return "All systems up and running"
