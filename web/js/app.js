@@ -5,7 +5,8 @@ var app = {
     },
     container: document.querySelector('#app-container'),
     xhr: new XMLHttpRequest(),
-    ws: null
+    ws: null,
+    loader: document.querySelector('.app-loader')
 };
 
 // Helper method to fetch the status over an XMLHttpRequest and update
@@ -32,6 +33,7 @@ function fetchOverWebSocket() {
        app.ws.send('status');
     };
     app.ws.onmessage = function (evt) {
+        app.loader.classList.remove('show');
         if (evt.data.indexOf('down') !== -1) {
             app.container.classList.remove('success');
             app.container.classList.add('error');
@@ -52,5 +54,6 @@ if (!window.WebSocket) {
 } else {
     // If the browser supports WebSocket, use a WebSocket connection to
     // listen to the status from the app
+    app.loader.classList.add('show');
     fetchOverWebSocket();
 }
