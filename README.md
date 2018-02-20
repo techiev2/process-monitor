@@ -20,16 +20,16 @@ PY_VERSION=3.6 ./scripts/run
 
 ```
 # Update this method to trigger a custom notification/processing flow
-# on a database downtime.
-def notify_error(db_error):
+# on a monitored process' downtime.
+def notify_monitor_error(monitor_error):
     """."""
     pass
 ```
 
 ```
 # Update this method to trigger a custom notification/processing flow
-# when the database is back up
-def notify_db_return():
+# when the monitored process is back up
+def notify_monitor_success():
     """."""
     pass
 ```
