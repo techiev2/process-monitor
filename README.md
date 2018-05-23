@@ -1,6 +1,6 @@
 ## Monitor app
 
-A minimal IOLoop PeriodicCallback based application for monitoring database connection status. Runs a Tornado appliction on port 9999 and periodically checks for the global database object's status every 500ms.
+A minimal IOLoop PeriodicCallback based application for monitoring database connection status. Runs a Tornado application on port 9999 and periodically checks for the global database object's status every 500ms.
 
 On success/failure, initiates a specific notifier action as specified in one of the helper methods.
 
