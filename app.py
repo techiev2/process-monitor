@@ -112,7 +112,7 @@ def notify_monitor_error(monitor_error):
 
     if valid:
         LAST_NOTIFIED = current_time_stamp
-        print(failure_msg.format(monitor_error))
+        # print(failure_msg.format(monitor_error))
 
         global CHANNELS
         message = "Monitored process is back up."
