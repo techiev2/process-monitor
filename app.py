@@ -83,7 +83,6 @@ def notify_monitor_success(message=None):
         try:
         except WebSocketClosedError:
             pass
-    print(message)
 
 
 def notify_monitor_error(monitor_error):
