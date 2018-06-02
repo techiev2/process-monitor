@@ -81,6 +81,7 @@ def notify_monitor_success(message=None):
     status_subscribers = CHANNELS.get("status", [])
     for subscriber in status_subscribers:
         try:
+            subscriber.write_message(message)
         except WebSocketClosedError:
             pass
 
