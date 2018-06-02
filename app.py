@@ -61,7 +61,7 @@ def run_periodic():
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
             LAST_NOTIFIED = None
-            notify_monitor_success()
+            notify_monitor_success(message=None)
     except BaseException as monitor_error:
         DATABASE_STATE_CHANGED = True
         DATABASE_AVAILABLE = False
