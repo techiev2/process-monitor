@@ -63,9 +63,9 @@ fi
 
 installSystemPackages() {
     packages=""
+    echo "Installing system packages"
     while IFS='' read -r line || [[ -n "$line" ]]; do
-        if [[ 
-            "$line" != "#"* ]] && [[ "$line" != "" ]]; then
+        if [[ "$line" != "#"* ]] && [[ "$line" != "" ]]; then
             # To process Python* packages, a py-<package> convention
             # is used in the requirements. 
             if [[ "$line" == "py-"* ]]; then
@@ -80,11 +80,12 @@ installSystemPackages() {
         exit 1
     fi
     echo "Installing $packages"
-    res=$(sudo apt-get install -y $packages 2>&1)
-    if [[ "$res" == *"E:"* ]]; then
-        echo -e "Error installing packages. $res"
-        exit 1
-    fi
+    # res=$(sudo apt-get install -y $packages 2>&1)
+    # if [[ "$res" == *"E:"* ]]; then
+    #     echo -e "Error installing packages. $res"
+    #     exit 1
+    # fi
+    sudo apt-get install -y $packages 2>&1
     echo "Installed system packages"
 }
 
