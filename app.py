@@ -68,7 +68,7 @@ def run_periodic():
         notify_monitor_error(monitor_error)
 
 
-def notify_monitor_success():
+def notify_monitor_success(message=None):
     """
     Helper to notify the consumers of the monitored process returning
     to an available state.
@@ -76,11 +76,11 @@ def notify_monitor_success():
     TODO: Plug in a proper notification backend
     """
     global CHANNELS
-    message = "Database back up.."
-    status_subscribers = CHANNELS.get("status")
+    message = message or get_status_message()
+    # "Database back up.."
+    status_subscribers = CHANNELS.get("status", [])
     for subscriber in status_subscribers:
         try:
-            subscriber.write_message(get_status_message())
         except WebSocketClosedError:
             pass
     print(message)
