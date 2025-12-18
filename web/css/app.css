@@ -12,7 +12,7 @@ html, body {
 }
 
 body {
-    background: #CDDC39;
+    /*background: #CDDC39;*/
 }
 
 #app-container {
@@ -34,8 +34,12 @@ body {
 }
 
 #app-container.success {
-    background: #607D8B;
-    color: #E0E0E0;
+    /*background: #607D8B;*/
+    background: #eeeeee55;
+    color: #333;
+}
+#app-container.success:hover {
+    box-shadow: 0px 0px 5px #000000;
 }
 
 #app-container.error {
