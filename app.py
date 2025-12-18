@@ -14,7 +14,8 @@ __author__ = "Sriram Velamur<sriram.velamur@gmail.com>"
 import sys
 sys.dont_write_bytecode = True
 from os import getenv, path, pardir
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
+import datetime
 
 from tornado.web import Application, RequestHandler, StaticFileHandler
 from tornado.websocket import WebSocketHandler, WebSocketClosedError
@@ -56,7 +57,7 @@ def run_periodic():
     """
     global DATABASE_STATE_CHANGED, LAST_NOTIFIED, DATABASE, DATABASE_AVAILABLE
     try:
-        DATABASE.collection_names()
+        DATABASE.list_collection_names()
         DATABASE_AVAILABLE = True
         if DATABASE_STATE_CHANGED:
             DATABASE_STATE_CHANGED = False
@@ -98,7 +99,7 @@ def notify_monitor_error(monitor_error):
     TODO: Plug in a proper notification backend
     """
     global LAST_NOTIFIED
-    current_time_stamp = datetime.utcnow()
+    current_time_stamp = datetime.datetime.now(UTC)
     if LAST_NOTIFIED is not None:
         cutoff = LAST_NOTIFIED + timedelta(minutes=5)
         valid = current_time_stamp >= cutoff
@@ -155,7 +156,7 @@ class MonitorApplication(Application):
 def get_status_message():
     """Helper to get a status message based on database connectivity"""
     if not DATABASE_AVAILABLE:
-        current_time_stamp = datetime.utcnow()
+        current_time_stamp = datetime.datetime.now(UTC)
         time_diff = (current_time_stamp - LAST_NOTIFIED).seconds
 
         if time_diff < 60:
